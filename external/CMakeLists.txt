@@ -5,7 +5,7 @@ pkg_search_module(GLFW REQUIRED glfw3)
 # Static Library: ImGui
 add_library(${CG_IMGUI_LIB}
         imgui/imgui.cpp
-        imgui/imgui_demo.cpp
+        imgui/imgui_widgets.cpp
         imgui/imgui_draw.cpp
         )
 target_link_libraries(${CG_IMGUI_LIB}

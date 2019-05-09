@@ -25,8 +25,8 @@ include_directories(".")
 set(CG_ADDITIONAL_LIBRARIES)
 cg_add_program("rembot"
         main.cpp
-      #  app.cpp
+        app.cpp
       #  core.cpp
-      #  ui.cpp
+        ui.cpp
        # data.cpp
         )
