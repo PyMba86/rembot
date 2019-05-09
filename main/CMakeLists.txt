@@ -26,6 +26,7 @@ set(CG_ADDITIONAL_LIBRARIES)
 cg_add_program("rembot"
         main.cpp
         app.cpp
+        editor.cpp
       #  core.cpp
         ui.cpp
        # data.cpp
