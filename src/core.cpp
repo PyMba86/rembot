@@ -9,12 +9,12 @@
 
 namespace rb {
 
-    inline void updateStateData(const StateData * bsrc, StateData * bdst) {
-
+    inline void updateStateData(const StateData *bsrc, StateData *bdst) {
+        bdst->number = bsrc->number;
     }
 
     struct Core::Data {
-        Data()= default;
+        Data() = default;
 
         ~Data() {
             free();
@@ -54,7 +54,7 @@ namespace rb {
     };
 
     Core::Core() : _data(new Data()) {
-        _data->stateData[Data::BUFFER_UI]     = std::make_shared<StateData>();
+        _data->stateData[Data::BUFFER_UI] = std::make_shared<StateData>();
         _data->stateData[Data::BUFFER_CACHED] = std::make_shared<StateData>();
         _data->stateData[Data::BUFFER_ACTIVE] = std::make_shared<StateData>();
     }
@@ -66,7 +66,7 @@ namespace rb {
     void Core::init() {
         _data->isRunning = true;
 
-       // _data->workerMain = std::thread(&Core::main, this);
+        _data->workerMain = std::thread(&Core::main, this);
     }
 
     void Core::update() {
@@ -75,8 +75,8 @@ namespace rb {
 
         std::lock_guard<std::mutex> lock(_data->mutexStateData);
 
-        auto & bsrc = _data->stateData[Data::BUFFER_CACHED];
-        auto & bdst = _data->stateData[Data::BUFFER_UI];
+        auto &bsrc = _data->stateData[Data::BUFFER_CACHED];
+        auto &bdst = _data->stateData[Data::BUFFER_UI];
 
         updateStateData(bsrc.get(), bdst.get());
 
@@ -97,15 +97,20 @@ namespace rb {
 
     void Core::notifyEvent(Core::Event event) {
 
-        switch(event) {
-            case Init: {
-                std::cout << "Hello" << std::endl;
-            }
-        }
-
         auto inp = _data->stateInput.lock();
 
         if (inp == nullptr) return;
+
+        switch (event) {
+            case Init: {
+                std::cout << "Hello" << std::endl;
+                _data->inputQueue.push([this]() {
+                    _data->needRecache = true;
+                    _data->stateData[Data::BUFFER_ACTIVE]->number++;
+                });
+            }
+        }
+
 
     }
 
@@ -138,8 +143,8 @@ namespace rb {
 
         std::lock_guard<std::mutex> lock(_data->mutexStateData);
 
-        auto & bsrc = _data->stateData[Data::BUFFER_ACTIVE];
-        auto & bdst = _data->stateData[Data::BUFFER_CACHED];
+        auto &bsrc = _data->stateData[Data::BUFFER_ACTIVE];
+        auto &bdst = _data->stateData[Data::BUFFER_CACHED];
 
         updateStateData(bsrc.get(), bdst.get());
 

@@ -7,6 +7,6 @@ namespace rb {
     };
 
     struct StateData {
-        int x;
+        int number = 0;
     };
 }

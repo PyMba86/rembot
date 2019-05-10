@@ -11,7 +11,7 @@
 namespace rb {
 
     struct Editor::Data {
-
+        Data() : stateInput(new StateInput()) {}
         std::shared_ptr<StateInput> stateInput;
         std::weak_ptr<StateData> stateData;
         std::shared_ptr<StateData> stateDataLocked;
@@ -35,6 +35,13 @@ namespace rb {
     }
 
     void Editor::render() {
+
+        if (!(_data->stateDataLocked = _data->stateData.lock())) {
+           // CG_WARN(0, "Missing state data\n");
+        }
+
+        const auto & data = _data->stateDataLocked;
+
         //Return the current mouse position
         static auto getMousePos = [&]() -> sf::Vector2f {
             return this->_window->mapPixelToCoords(sf::Vector2i(
@@ -69,12 +76,6 @@ namespace rb {
 
         this->_window->draw(rectangle);
 
-        ImGui::Render();
-    }
-
-    void Editor::update(sf::Time t) {
-        ImGui::SFML::Update(t);
-
         static sf::Vector2f mousePos(0.0f, 0.0f);
         static bool newMapBoxVisible = true;
         static std::regex macRegex("^[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$");
@@ -87,7 +88,7 @@ namespace rb {
             static std::string newMapErrorText = "";
             ImGui::Begin("New map properties", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-            ImGui::Text("MAC address");
+            ImGui::Text("MAC address: %d", data->number);
             static char macAddress[18] = "";
             ImGui::PushItemWidth(300);
             ImGui::InputText("", macAddress, 18);
@@ -195,6 +196,14 @@ namespace rb {
             }
             ImGui::EndMainMenuBar();
         }
+
+        ImGui::Render();
+    }
+
+    void Editor::update(sf::Time t) {
+        ImGui::SFML::Update(t);
+
+
 
 
         //Updating internal classes
