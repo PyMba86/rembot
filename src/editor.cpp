@@ -76,7 +76,50 @@ namespace rb {
 
         this->_window->draw(rectangle);
 
-        static sf::Vector2f mousePos(0.0f, 0.0f);
+
+        sf::Vector2f mousePos = getMousePos();
+
+
+        if (mousePos.x >= 0 && (mousePos.x <= (this->_level.getSize().x * this->_level.getTileSize().x *
+                                              std::stof(
+                                                      detail::utils::getConfigValue("tile_scale_x")))) &&
+            mousePos.y >= 0 && mousePos.y <= (this->_level.getSize().y * this->_level.getTileSize().y *
+                                              std::stof(
+                                                      detail::utils::getConfigValue("tile_scale_y")))) {
+
+            auto diffTileMouseX = (int)mousePos.x % (int) (this->_level.getTileSize().x *
+                                                          std::stof(
+                                                                  detail::utils::getConfigValue(
+                                                                          "tile_scale_x")));
+
+            auto diffTileMouseY = (int)mousePos.y % (int) (this->_level.getTileSize().y *
+                                                           std::stof(
+                                                                   detail::utils::getConfigValue(
+                                                                           "tile_scale_y")));
+
+            if (( diffTileMouseX <= 5 ) &&
+                    (diffTileMouseY <= 5)) {
+
+
+                sf::RectangleShape rectangleBox;
+                rectangleBox.setSize(sf::Vector2f(10,
+                                               10));
+                rectangleBox.setOutlineColor(sf::Color::Blue);
+                rectangleBox.setOutlineThickness(2);
+                rectangleBox.setPosition(
+                        std::floor(mousePos.x - ((int) mousePos.x % (int) (this->_level.getTileSize().x *
+                                                                           std::stof(
+                                                                                   detail::utils::getConfigValue(
+                                                                                           "tile_scale_x")))) - 5),
+                        std::floor(mousePos.y - ((int) mousePos.y % (int) (this->_level.getTileSize().y *
+                                                                           std::stof(
+                                                                                   detail::utils::getConfigValue(
+                                                                                           "tile_scale_y"))))) - 5);
+                rectangleBox.setFillColor(sf::Color::Transparent);
+                this->_window->draw(rectangleBox);
+            }
+        }
+
         static bool newMapBoxVisible = true;
         static std::regex macRegex("^[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$");
 
@@ -135,7 +178,7 @@ namespace rb {
 
             ImGui::PopItemWidth();
             if (ImGui::Button("Create")) {
-                if (!std::regex_match(macAddress, macRegex)) {
+                if (std::regex_match(macAddress, macRegex)) {
                     newMapErrorText = "Invalid MAC address!";
                 }
                 else if (radiusWheel <= 0) {
@@ -184,8 +227,13 @@ namespace rb {
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("View")) {
+            if (ImGui::BeginMenu("Control")) {
+                if (ImGui::MenuItem("Play")) {
 
+                }
+                if (ImGui::MenuItem("Stop")) {
+
+                }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Map")) {

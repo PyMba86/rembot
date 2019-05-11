@@ -42,7 +42,7 @@ namespace rb {
         bool cacheUpdated = false;
         bool encodeIdParity = true;
         bool useChecksum = false;
-        std::atomic<bool> isRunning;
+        std::atomic<bool> isRunning{};
 
         mutable std::mutex mutexStateData;
 
@@ -66,7 +66,7 @@ namespace rb {
     void Core::init() {
         _data->isRunning = true;
 
-        _data->workerMain = std::thread(&Core::main, this);
+       // _data->workerMain = std::thread(&Core::main, this);
     }
 
     void Core::update() {
