@@ -27,7 +27,7 @@ namespace rb {
 
         enum Event {
             WINDOW_CLOSE,
-            BUTTON_INIT,
+            BUTTON_CONNECT,
             BUTTON_CLOSE,
             BUTTON_DATA_ON,
             BUTTON_DATA_OFF
@@ -40,12 +40,19 @@ namespace rb {
 
         bool _showGridLines;
         bool _windowHasFocus;
+        bool _hideShapes;
+        bool _showEntityList;
+        bool _attachPoint;
+
+        int _menuClicks;
 
         sf::RenderWindow* _window;
         std::shared_ptr<rb::detail::Graphics>  _graphics;
         std::vector<std::array<sf::Vertex, 2>> _gridLines;
         detail::Level _level;
         detail::WindowTypes _currentWindowType;
+        detail::MapEditorMode _currentMapEditorMode;
+        detail::DrawShapes _currentDrawShape;
         sf::Event _currentEvent;
 
         struct Data;

@@ -18,7 +18,9 @@
 namespace rb {
 
     inline void updateStateData(const StateData *bsrc, StateData *bdst) {
-        bdst->number = bsrc->number;
+        bdst->statusConnection = bsrc->statusConnection;
+        bdst->positionActive = bsrc->positionActive;
+        bdst->message = bsrc->message;
     }
 
     struct Core::Data {
@@ -53,8 +55,6 @@ namespace rb {
 
         bool needRecache = false;
         bool cacheUpdated = false;
-        bool encodeIdParity = true;
-        bool useChecksum = false;
         std::atomic<bool> isRunning{};
 
         mutable std::mutex mutexStateData;
@@ -68,9 +68,6 @@ namespace rb {
         std::mutex m;
         std::condition_variable cond_var;
         bool notified = false;
-
-        std::mutex g_mutex;
-        std::condition_variable g_cond;
 
     };
 
@@ -89,7 +86,11 @@ namespace rb {
 
         _data->workerMain = std::thread(&Core::main, this);
 
-        _data->workerConnect = std::thread([&]{ _data->hive->Run(); });
+        _data->connection->onEvent([this](StatusConnection status, const std::vector<uint8_t> buffer) {
+            this->connectionCbEvent(status, buffer);
+        });
+
+        _data->workerConnect = std::thread([&] { _data->hive->Run(); });
     }
 
     void Core::update() {
@@ -127,7 +128,7 @@ namespace rb {
         std::unique_lock<std::mutex> lock(_data->m);
 
         switch (event) {
-            case Close: {
+            case Core::Event::Close: {
                 _data->inputQueue.push([this]() {
 
                     _data->hive->Stop();
@@ -138,18 +139,61 @@ namespace rb {
                 });
             }
                 break;
-            case Init: {
-                std::cout << "Init" << std::endl;
-                _data->inputQueue.push([this]() {
-                     _data->connection->Connect("00:16:53:18:8E:08", 1);
+            case Core::Event::Connect: {
+                std::cout << "Connect" << std::endl;
+
+                auto macAddress = inp->macAddress;
+                auto chanel = inp->chanel;
+
+                _data->inputQueue.push([this, macAddress, chanel]() {
+                    _data->needRecache = true;
+                    _data->connection->Connect(macAddress, chanel);
+
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusConnection = StatusConnection::Connecting;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Connecting...";
                 });
             }
                 break;
-            case Disconnect: {
-                std::cout << "Disconnect" << std::endl;
+            case Core::Event::Connected: {
                 _data->inputQueue.push([this]() {
-                    _data->connection->Disconnect();
+                    _data->needRecache = true;
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusConnection = StatusConnection::Connected;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Connected";
                 });
+            }
+                break;
+            case Core::Event::Disconnected: {
+                _data->inputQueue.push([this]() {
+                    _data->needRecache = true;
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusConnection = StatusConnection::Closed;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Disconnected";
+                });
+            }
+                break;
+            case Core::Event::Disconnect: {
+                _data->inputQueue.push([this]() {
+                    _data->needRecache = true;
+                    _data->connection->Disconnect();
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusConnection = StatusConnection::Closing;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Disconnecting...";
+                });
+            }
+                break;
+            case Core::Event::Play: {
+                // Отправляем первую команду роботу из списка
+            }
+                break;
+            case Core::Event::Stop: {
+                _data->inputQueue.push([this]() {
+                    // Останавливаем робота и зануляем значения
+                    _data->needRecache = true;
+                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Stop control";
+                });
+            }
+                break;
+            case Core::Event::Next: {
+                // Отправляем следующую команду и отрисовываем
             }
                 break;
             default:
@@ -180,15 +224,13 @@ namespace rb {
             std::unique_lock<std::mutex> lock(_data->m);
 
             while (!_data->notified)
-               _data->cond_var.wait(lock);
+                _data->cond_var.wait(lock);
 
             input();
 
-            //connection->Send({'S'});
-
             cache();
 
-                _data->notified = false;
+            _data->notified = false;
         }
     }
 
@@ -204,6 +246,29 @@ namespace rb {
 
         _data->cacheUpdated = true;
         _data->needRecache = false;
+    }
+
+    void Core::connectionCbEvent(StatusConnection status, const std::vector<uint8_t> buffer) {
+
+        switch (status) {
+            case StatusConnection::Closed: {
+                this->notifyEvent(Core::Event::Disconnected);
+            }
+                break;
+            case StatusConnection::Closing:
+                break;
+            case StatusConnection::Connecting:
+                break;
+            case StatusConnection::Connected: {
+                this->notifyEvent(Core::Event::Connected);
+            }
+                break;
+            case StatusConnection::Recived: {
+                // Проверяем ответ и отправляем команду
+                this->notifyEvent(Core::Event::Next);
+            }
+                break;
+        }
     }
 
 

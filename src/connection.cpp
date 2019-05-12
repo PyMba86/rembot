@@ -22,14 +22,9 @@ namespace rb {
         std::cout << "[OnConnect] " << addr << ":" << channel << "\n";
         global_stream_lock.unlock();
 
+        runCbEvent(StatusConnection::Connected, {});
         // Start the next receive
         Recv();
-
-        std::string str = "S";
-
-        std::vector<uint8_t> request;
-        std::copy(str.begin(), str.end(), std::back_inserter(request));
-        Send(request);
     }
 
     void BtConnection::OnSend(const std::vector<uint8_t> &buffer) {
@@ -57,6 +52,8 @@ namespace rb {
         std::cout << "\n";
         global_stream_lock.unlock();
 
+        runCbEvent(StatusConnection::Recived, buffer);
+
         std::string str = "S";
 
         std::vector<uint8_t> request;
@@ -77,6 +74,17 @@ namespace rb {
         global_stream_lock.lock();
         std::cout << "[OnError] " << error.message() << "\n";
         global_stream_lock.unlock();
+        runCbEvent(StatusConnection::Closed, {});
+    }
+
+    void BtConnection::onEvent(BtConnectionEvent cbEvent) {
+        this->_cbEvent = cbEvent;
+    }
+
+    void BtConnection::runCbEvent(StatusConnection status, const std::vector<uint8_t> buffer) {
+        if(_cbEvent) {
+            _cbEvent(status, buffer);
+        }
     }
 
 }

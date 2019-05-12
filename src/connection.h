@@ -6,14 +6,22 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
+#include "data.h"
 
 namespace rb {
+
+    using  BtConnectionEvent =  std::function<void(StatusConnection, const std::vector<uint8_t>)>;
 
     class BtConnection : public Connection {
     public:
         explicit BtConnection(boost::shared_ptr<Hive> hive);
 
         ~BtConnection() override;
+
+        void onEvent(BtConnectionEvent cbEvent);
+
+    protected:
+        virtual void runCbEvent(StatusConnection status, const std::vector<uint8_t> buffer);
 
     private:
         void OnAccept(const std::string &addr, uint8_t channel) override;
@@ -30,5 +38,6 @@ namespace rb {
 
     private:
         boost::mutex global_stream_lock;
+        BtConnectionEvent _cbEvent;
     };
 }

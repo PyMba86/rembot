@@ -3,6 +3,7 @@
 #include <memory>
 #include <condition_variable>
 #include <mutex>
+#include "data.h"
 
 namespace rb {
 
@@ -27,13 +28,18 @@ namespace rb {
 
         enum Event {
             Close,
-            Init,
+            Connect,
+            Connected,
+            Disconnected,
             Disconnect,
-            DataOn,
-            DataOff
+            Play,
+            Stop,
+            Next
         };
 
         void notifyEvent(Event event);
+
+        void connectionCbEvent(StatusConnection status, const std::vector<uint8_t> buffer);
 
     private:
         void input();

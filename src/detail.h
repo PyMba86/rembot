@@ -19,6 +19,14 @@ namespace rb {
             None, Map
         };
 
+        enum class DrawShapes {
+            None, Point, Line
+        };
+
+        enum class MapEditorMode {
+            None, Object
+        };
+
         enum class WindowTypes {
             None, TilesetWindow, NewMapWindow, ConfigWindow, MapSelectWindow, AboutWindow, LightEditorWindow,
             NewAnimatedSpriteWindow, NewAnimationWindow, RemoveAnimationWindow, EntityListWindow, EntityPropertiesWindow, ShapeColorWindow,
@@ -148,5 +156,45 @@ namespace rb {
             sf::Color _color = sf::Color::White;
             bool _selected;
         };
+
+
+        class Point : public Shape {
+        public:
+            Point(std::string name, sf::Color color, sf::CircleShape dot);
+            sf::CircleShape getCircle();
+            virtual sf::Color getColor() const override;
+            virtual void setColor(sf::Color color) override;
+            virtual void fixPosition(sf::Vector2i levelSize, sf::Vector2i tileSize, sf::Vector2f tileScale) override;
+            virtual bool isPointInside(sf::Vector2f point) override;
+            virtual void select() override;
+            virtual void unselect() override;
+            virtual void setPosition(sf::Vector2f pos) override;
+            virtual void setSize(sf::Vector2f size) override;
+            virtual void draw(sf::RenderWindow* window) override;
+            virtual bool equals(std::shared_ptr<Shape> other) override;
+        private:
+            sf::CircleShape _dot;
+        };
+
+        class Line : public Shape {
+        public:
+            Line(std::string name, sf::Color color, std::vector<std::shared_ptr<Point>> points);
+            std::vector<std::shared_ptr<Point>> getPoints();
+            std::shared_ptr<Point> getSelectedPoint(sf::Vector2f mousePos);
+            void deletePoint(std::shared_ptr<Point> p);
+            virtual sf::Color getColor() const override;
+            virtual void setColor(sf::Color color) override;
+            virtual void fixPosition(sf::Vector2i levelSize, sf::Vector2i tileSize, sf::Vector2f tileScale) override;
+            virtual bool isPointInside(sf::Vector2f point) override;
+            virtual void select() override;
+            virtual void unselect() override;
+            virtual void setPosition(sf::Vector2f pos) override;
+            virtual void setSize(sf::Vector2f size) override;
+            virtual void draw(sf::RenderWindow* window) override;
+            virtual bool equals(std::shared_ptr<Shape> other) override;
+        private:
+            std::vector<std::shared_ptr<Point>> _points;
+        };
+
     }
 }
