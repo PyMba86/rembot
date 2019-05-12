@@ -15,6 +15,10 @@ namespace rb {
          */
         class Shape;
 
+        enum class Features {
+            None, Map
+        };
+
         enum class WindowTypes {
             None, TilesetWindow, NewMapWindow, ConfigWindow, MapSelectWindow, AboutWindow, LightEditorWindow,
             NewAnimatedSpriteWindow, NewAnimationWindow, RemoveAnimationWindow, EntityListWindow, EntityPropertiesWindow, ShapeColorWindow,

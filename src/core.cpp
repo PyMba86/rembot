@@ -6,6 +6,14 @@
 #include "core.h"
 #include "data.h"
 #include "queue.h"
+#include "../libext/asio_bluetooth/wrapper.h"
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/make_shared.hpp>
+#include <termios.h>
+#include <unistd.h>
+#include <stdio.h>
+#include "connection.h"
 
 namespace rb {
 
@@ -14,7 +22,7 @@ namespace rb {
     }
 
     struct Core::Data {
-        Data() = default;
+        Data() : hive(new Hive()), connection(new BtConnection(hive)) {};
 
         ~Data() {
             free();
@@ -36,7 +44,12 @@ namespace rb {
             BUFFER_ACTIVE,
         };
 
+        boost::shared_ptr<Hive> hive;
+
+        boost::shared_ptr<BtConnection> connection;
+
         std::thread workerMain;
+        std::thread workerConnect;
 
         bool needRecache = false;
         bool cacheUpdated = false;
@@ -50,6 +63,14 @@ namespace rb {
         std::array<std::shared_ptr<StateData>, 3> stateData;
 
         RingBuffer<std::function<void()>, 256> inputQueue;
+
+
+        std::mutex m;
+        std::condition_variable cond_var;
+        bool notified = false;
+
+        std::mutex g_mutex;
+        std::condition_variable g_cond;
 
     };
 
@@ -66,7 +87,9 @@ namespace rb {
     void Core::init() {
         _data->isRunning = true;
 
-       // _data->workerMain = std::thread(&Core::main, this);
+        _data->workerMain = std::thread(&Core::main, this);
+
+        _data->workerConnect = std::thread([&]{ _data->hive->Run(); });
     }
 
     void Core::update() {
@@ -101,17 +124,39 @@ namespace rb {
 
         if (inp == nullptr) return;
 
+        std::unique_lock<std::mutex> lock(_data->m);
+
         switch (event) {
-            case Init: {
-                std::cout << "Hello" << std::endl;
+            case Close: {
                 _data->inputQueue.push([this]() {
-                    _data->needRecache = true;
-                    _data->stateData[Data::BUFFER_ACTIVE]->number++;
+
+                    _data->hive->Stop();
+
+                    if (_data->workerConnect.joinable()) _data->workerConnect.join();
+
+                    _data->isRunning = false;
                 });
             }
+                break;
+            case Init: {
+                std::cout << "Init" << std::endl;
+                _data->inputQueue.push([this]() {
+                     _data->connection->Connect("00:16:53:18:8E:08", 1);
+                });
+            }
+                break;
+            case Disconnect: {
+                std::cout << "Disconnect" << std::endl;
+                _data->inputQueue.push([this]() {
+                    _data->connection->Disconnect();
+                });
+            }
+                break;
+            default:
+                break;
         }
-
-
+        _data->notified = true;
+        _data->cond_var.notify_one();
     }
 
     void Core::input() {
@@ -132,9 +177,18 @@ namespace rb {
         auto data = _data->stateData[Data::BUFFER_ACTIVE];
 
         while (_data->isRunning) {
+            std::unique_lock<std::mutex> lock(_data->m);
+
+            while (!_data->notified)
+               _data->cond_var.wait(lock);
+
             input();
 
+            //connection->Send({'S'});
+
             cache();
+
+                _data->notified = false;
         }
     }
 

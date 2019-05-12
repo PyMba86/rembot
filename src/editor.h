@@ -26,7 +26,9 @@ namespace rb {
         std::weak_ptr<StateInput> getStateInput() const;
 
         enum Event {
+            WINDOW_CLOSE,
             BUTTON_INIT,
+            BUTTON_CLOSE,
             BUTTON_DATA_ON,
             BUTTON_DATA_OFF
         };
@@ -44,6 +46,7 @@ namespace rb {
         std::vector<std::array<sf::Vertex, 2>> _gridLines;
         detail::Level _level;
         detail::WindowTypes _currentWindowType;
+        sf::Event _currentEvent;
 
         struct Data;
         std::unique_ptr<Data> _data;

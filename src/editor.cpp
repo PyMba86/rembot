@@ -59,6 +59,198 @@ namespace rb {
             }
         }
 
+
+        sf::Vector2f mousePos = getMousePos();
+
+
+        auto mousePosBoxX = (this->_level.getSize().x * this->_level.getTileSize().x *
+         std::stof(
+                 detail::utils::getConfigValue("tile_scale_x")));
+
+        auto mousePosBoxY = (this->_level.getSize().y * this->_level.getTileSize().y *
+                             std::stof(
+                                     detail::utils::getConfigValue("tile_scale_y")));
+
+
+        if (mousePos.x >= 0 && (mousePos.x <= mousePosBoxX) &&
+            mousePos.y >= 0 && mousePos.y <= mousePosBoxY) {
+
+            auto diffTileMouseX = (int)mousePos.x % (int) (this->_level.getTileSize().x *
+                                                          std::stof(
+                                                                  detail::utils::getConfigValue(
+                                                                          "tile_scale_x")));
+
+            auto diffTileMouseY = (int)mousePos.y % (int) (this->_level.getTileSize().y *
+                                                           std::stof(
+                                                                   detail::utils::getConfigValue(
+                                                                           "tile_scale_y")));
+
+            auto sizeBoxSelected = (this->_level.getTileSize().x *
+                                    std::stof(
+                                            detail::utils::getConfigValue(
+                                                    "tile_scale_x"))) / 10;
+
+            if (( std::abs(diffTileMouseX) <= sizeBoxSelected ) &&
+                    (std::abs(diffTileMouseY) <= sizeBoxSelected)) {
+
+
+                sf::RectangleShape rectangleBox;
+                rectangleBox.setSize(sf::Vector2f(sizeBoxSelected * 2,
+                                                  sizeBoxSelected * 2));
+                rectangleBox.setOutlineColor(sf::Color::Blue);
+                rectangleBox.setOutlineThickness(2);
+
+
+                rectangleBox.setPosition(
+                        std::floor(mousePos.x - ((int) mousePos.x % (int) (this->_level.getTileSize().x *
+                                                                           std::stof(
+                                                                                   detail::utils::getConfigValue(
+                                                                                           "tile_scale_x")))) - sizeBoxSelected),
+                        std::floor(mousePos.y - ((int) mousePos.y % (int) (this->_level.getTileSize().y *
+                                                                           std::stof(
+                                                                                   detail::utils::getConfigValue(
+                                                                                           "tile_scale_y"))))) - sizeBoxSelected);
+                rectangleBox.setFillColor(sf::Color::Transparent);
+                this->_window->draw(rectangleBox);
+            }
+        }
+
+        static bool newMapBoxVisible = true;
+        static bool configureBoxVisible = false;
+
+        static std::regex macRegex("^[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$");
+
+
+        if (configureBoxVisible) {
+            this->_currentWindowType = detail::WindowTypes::ConfigWindow;
+            ImGui::SetNextWindowPosCenter();
+            ImGui::SetNextWindowSize(ImVec2(360, 160));
+            static std::string configureErrorText;
+            ImGui::Begin("Configure", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+            ImGui::Text("MAC address: %d", data->number);
+            static char macAddress[18] = "";
+            ImGui::PushItemWidth(300);
+            ImGui::InputText("", macAddress, 18);
+            ImGui::PopItemWidth();
+            ImGui::Separator();
+
+            ImGui::PushItemWidth(100);
+
+            ImGui::PushID("Chanel");
+            ImGui::Text("Chanel");
+            static int chanel = 0;
+            ImGui::InputInt("ch", &chanel, 1, 0);
+            ImGui::Separator();
+            ImGui::PopID();
+
+            ImGui::PopItemWidth();
+
+            if (ImGui::Button("Create")) {
+                if (!std::regex_match(macAddress, macRegex)) {
+                    configureErrorText = "Invalid MAC address!";
+                }
+                else if (chanel <= 0) {
+                    configureErrorText = "Chanel must be greater than 0!";
+                }else {
+                    this->_currentWindowType = detail::WindowTypes::None;
+                    configureBoxVisible = false;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                this->_currentWindowType = detail::WindowTypes::None;
+                configureBoxVisible = false;
+            }
+            ImGui::Text("%s", configureErrorText.c_str());
+            ImGui::End();
+
+        }
+
+        //New map box
+        if (newMapBoxVisible) {
+            this->_currentWindowType = detail::WindowTypes::NewMapWindow;
+            ImGui::SetNextWindowPosCenter();
+            ImGui::SetNextWindowSize(ImVec2(460, 185));
+            static std::string newMapErrorText;
+            ImGui::Begin("New map properties", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+            ImGui::Text("Size world");
+            static int mapSizeX = 10;
+            static int mapSizeY = 10;
+            ImGui::InputInt("x", &mapSizeX, 1, 0);
+            ImGui::InputInt("y", &mapSizeY, 1, 0);
+            ImGui::Separator();
+
+            ImGui::PushItemWidth(100);
+
+            ImGui::PushID("NewMapTileSize");
+            ImGui::Text("Tile size");
+            static int mapTileSize = 10;
+            ImGui::InputInt("sm", &mapTileSize, 1, 0);
+            ImGui::Separator();
+            ImGui::PopID();
+
+            ImGui::PopItemWidth();
+            if (ImGui::Button("Create")) {
+                if (mapSizeX < 1 || mapSizeY < 1) {
+                    newMapErrorText = "The map's height and width must be at least 1!";
+                } else if (mapTileSize < 1) {
+                    newMapErrorText = "The map's tile height and tile width must be at least 1!";
+                } else if (mapSizeX * mapTileSize > 255 || mapSizeY * mapTileSize > 255) {
+                    newMapErrorText = "Maximum card size exceeded (255 sm)!";
+                }
+                else {
+                    this->_level.createMap(sf::Vector2i(mapSizeX, mapSizeY),
+                                           sf::Vector2i(mapTileSize, mapTileSize));
+                    createGridLines();
+                    newMapErrorText = "";
+                    this->_currentWindowType = detail::WindowTypes::None;
+                    newMapBoxVisible = false;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                newMapErrorText = "";
+                this->_currentWindowType = detail::WindowTypes::None;
+                newMapBoxVisible = false;
+            }
+            ImGui::Text("%s", newMapErrorText.c_str());
+            ImGui::End();
+        }
+
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("File")) {
+
+                if (ImGui::MenuItem("Configure")) {
+                    configureBoxVisible = true;
+                }
+                if (ImGui::MenuItem("Exit")) {
+
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Control")) {
+                if (ImGui::MenuItem("Play")) {
+                    if (auto & c = _data->callbacks[BUTTON_INIT]) c();
+                }
+                if (ImGui::MenuItem("Stop")) {
+                    if (auto & c = _data->callbacks[BUTTON_CLOSE]) c();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Map")) {
+                if (ImGui::MenuItem("New map")) {
+                    newMapBoxVisible = true;
+                }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+
+        ImGui::Render();
+
         //Draw the status bar
         sf::RectangleShape rectangle;
 
@@ -75,185 +267,10 @@ namespace rb {
                               cameraOffset.y);
 
         this->_window->draw(rectangle);
-
-
-        sf::Vector2f mousePos = getMousePos();
-
-
-        if (mousePos.x >= 0 && (mousePos.x <= (this->_level.getSize().x * this->_level.getTileSize().x *
-                                              std::stof(
-                                                      detail::utils::getConfigValue("tile_scale_x")))) &&
-            mousePos.y >= 0 && mousePos.y <= (this->_level.getSize().y * this->_level.getTileSize().y *
-                                              std::stof(
-                                                      detail::utils::getConfigValue("tile_scale_y")))) {
-
-            auto diffTileMouseX = (int)mousePos.x % (int) (this->_level.getTileSize().x *
-                                                          std::stof(
-                                                                  detail::utils::getConfigValue(
-                                                                          "tile_scale_x")));
-
-            auto diffTileMouseY = (int)mousePos.y % (int) (this->_level.getTileSize().y *
-                                                           std::stof(
-                                                                   detail::utils::getConfigValue(
-                                                                           "tile_scale_y")));
-
-            if (( diffTileMouseX <= 5 ) &&
-                    (diffTileMouseY <= 5)) {
-
-
-                sf::RectangleShape rectangleBox;
-                rectangleBox.setSize(sf::Vector2f(10,
-                                               10));
-                rectangleBox.setOutlineColor(sf::Color::Blue);
-                rectangleBox.setOutlineThickness(2);
-                rectangleBox.setPosition(
-                        std::floor(mousePos.x - ((int) mousePos.x % (int) (this->_level.getTileSize().x *
-                                                                           std::stof(
-                                                                                   detail::utils::getConfigValue(
-                                                                                           "tile_scale_x")))) - 5),
-                        std::floor(mousePos.y - ((int) mousePos.y % (int) (this->_level.getTileSize().y *
-                                                                           std::stof(
-                                                                                   detail::utils::getConfigValue(
-                                                                                           "tile_scale_y"))))) - 5);
-                rectangleBox.setFillColor(sf::Color::Transparent);
-                this->_window->draw(rectangleBox);
-            }
-        }
-
-        static bool newMapBoxVisible = true;
-        static std::regex macRegex("^[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$");
-
-        //New map box
-        if (newMapBoxVisible) {
-            this->_currentWindowType = detail::WindowTypes::NewMapWindow;
-            ImGui::SetNextWindowPosCenter();
-            ImGui::SetNextWindowSize(ImVec2(460, 320));
-            static std::string newMapErrorText = "";
-            ImGui::Begin("New map properties", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
-
-            ImGui::Text("MAC address: %d", data->number);
-            static char macAddress[18] = "";
-            ImGui::PushItemWidth(300);
-            ImGui::InputText("", macAddress, 18);
-            ImGui::PopItemWidth();
-            ImGui::Separator();
-
-            ImGui::PushItemWidth(100);
-
-            ImGui::PushID("RadiusWheel");
-            ImGui::Text("Radius wheel");
-            ImGui::PushItemWidth(300);
-            static float radiusWheel = 0;
-            ImGui::InputFloat("mm", &radiusWheel);
-            ImGui::PopItemWidth();
-            ImGui::Separator();
-            ImGui::PopID();
-
-            ImGui::PushID("DistanceWheel");
-            ImGui::Text("Distance wheel");
-            ImGui::PushItemWidth(300);
-            static float distanceWheel = 0;
-            ImGui::InputFloat("mm", &distanceWheel);
-            ImGui::PopItemWidth();
-            ImGui::Separator();
-            ImGui::PopID();
-
-            ImGui::PushID("NewMapSize");
-            ImGui::Text("Size world");
-            static int mapSizeX = 0;
-            static int mapSizeY = 0;
-            ImGui::InputInt("x", &mapSizeX, 1, 0);
-            ImGui::InputInt("y", &mapSizeY, 1, 0);
-            ImGui::Separator();
-            ImGui::PopID();
-
-            ImGui::PushID("NewMapTileSize");
-            ImGui::Text("Tile size");
-            static int mapTileSizeX = 8;
-            static int mapTileSizeY = 8;
-            ImGui::InputInt("x", &mapTileSizeX, 1, 0);
-            ImGui::InputInt("y", &mapTileSizeY, 1, 0);
-            ImGui::Separator();
-            ImGui::PopID();
-
-            ImGui::PopItemWidth();
-            if (ImGui::Button("Create")) {
-                if (std::regex_match(macAddress, macRegex)) {
-                    newMapErrorText = "Invalid MAC address!";
-                }
-                else if (radiusWheel <= 0) {
-                    newMapErrorText = "Wheel radius must be greater than 0!";
-                }
-                else if (mapSizeX < 1 || mapSizeY < 1) {
-                    newMapErrorText = "The map's height and width must be at least 1!";
-                } else if (mapTileSizeX < 1 || mapTileSizeY < 1) {
-                    newMapErrorText = "The map's tile height and tile width must be at least 1!";
-                } else {
-                    this->_level.createMap(sf::Vector2i(mapSizeX, mapSizeY),
-                                           sf::Vector2i(mapTileSizeX, mapTileSizeY));
-                    createGridLines();
-                    mapSizeX = 0;
-                    mapSizeY = 0;
-                    mapTileSizeX = 8;
-                    mapTileSizeY = 8;
-                    newMapErrorText = "";
-                    this->_currentWindowType = detail::WindowTypes::None;
-                    newMapBoxVisible = false;
-                }
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("Cancel")) {
-                mapSizeX = 0;
-                mapSizeY = 0;
-                mapTileSizeX = 8;
-                mapTileSizeY = 8;
-                newMapErrorText = "";
-                this->_currentWindowType = detail::WindowTypes::None;
-                newMapBoxVisible = false;
-            }
-            ImGui::Text("%s", newMapErrorText.c_str());
-            ImGui::End();
-        }
-
-        if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
-
-                if (ImGui::MenuItem("Configure")) {
-                    if (auto & c = _data->callbacks[BUTTON_INIT]) c();
-                }
-                if (ImGui::MenuItem("Exit")) {
-
-                }
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Control")) {
-                if (ImGui::MenuItem("Play")) {
-
-                }
-                if (ImGui::MenuItem("Stop")) {
-
-                }
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Map")) {
-                if (ImGui::MenuItem("New map")) {
-                    newMapBoxVisible = true;
-                }
-                ImGui::EndMenu();
-            }
-            ImGui::EndMainMenuBar();
-        }
-
-        ImGui::Render();
     }
 
     void Editor::update(sf::Time t) {
         ImGui::SFML::Update(t);
-
-
-
-
         //Updating internal classes
         this->_level.update(t.asSeconds());
         this->_graphics->update(t.asSeconds(), sf::Vector2f(this->_level.getTileSize()), (this->_windowHasFocus));
@@ -265,6 +282,26 @@ namespace rb {
 
     void Editor::processEvent(sf::Event &event) {
         ImGui::SFML::ProcessEvent(event);
+        this->_currentEvent = event;
+        switch (event.type) {
+            case sf::Event::GainedFocus:
+                this->_windowHasFocus = true;
+                break;
+            case sf::Event::LostFocus:
+                this->_windowHasFocus = false;
+                break;
+            case sf::Event::MouseWheelScrolled:
+                    if (event.mouseWheelScroll.wheel == sf::Mouse::VerticalWheel) {
+                        this->_graphics.get()->zoom(event.mouseWheelScroll.delta,
+                                                    {event.mouseWheelScroll.x, event.mouseWheelScroll.y});
+                    }
+                break;
+            case sf::Event::Closed:
+                if (auto & c = _data->callbacks[WINDOW_CLOSE]) c();
+                break;
+            default:
+                break;
+        }
     }
 
     void Editor::createGridLines() {

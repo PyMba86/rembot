@@ -30,6 +30,7 @@ set(LIB_FILES
         src/data.cpp
         src/editor.cpp
         src/main.cpp
+        src/connection.cpp
         src/core.cpp
         )
 

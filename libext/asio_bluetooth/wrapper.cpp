@@ -269,7 +269,7 @@ void Connection::StartTimer()
 // Connection::StartError definition
 void Connection::StartError(const boost::system::error_code &error)
 {
-	if(boost::interprocess::ipcdetail::atomic_cas32(&m_error_state, 1, 0) == 0)
+	if(error != boost::system::errc::success)
 	{
 		boost::system::error_code ec;
 		m_socket.shutdown(boost::asio::bluetooth::bluetooth::socket::shutdown_both, ec);
@@ -283,9 +283,9 @@ void Connection::StartError(const boost::system::error_code &error)
 void Connection::HandleConnect(const boost::system::error_code &error)
 {
 	std::cout << "Connection::HandleConnect()" << std::endl;
-	if(error || HasError() || m_hive->HasStopped())
+	if(error != boost::system::errc::success || m_hive->HasStopped())
 	{
-		std::cout << "Handle connect has error" << std::endl;
+		std::cout << "Handle connect has error: " << error.message() << std::endl;
 		StartError( error );
 	}
 	else
@@ -302,9 +302,9 @@ void Connection::HandleConnect(const boost::system::error_code &error)
 void Connection::HandleSend(const boost::system::error_code &error, std::list<std::vector<uint8_t> >::iterator itr)
 {
 	std::cout << "Connection::HandleSend()" << std::endl;
-	if(error || HasError() || m_hive->HasStopped())
+	if(error != boost::system::errc::success || m_hive->HasStopped())
 	{
-		std::cout << "Connection::HandleSend() has error" << std::endl;
+		std::cout << "Connection::HandleSend() has error"  << error.message() << std::endl;
 		StartError(error);
 	}
 	else
@@ -318,7 +318,7 @@ void Connection::HandleSend(const boost::system::error_code &error, std::list<st
 // Connection::HandleRecv definition
 void Connection::HandleRecv(const boost::system::error_code &error, int32_t actual_bytes)
 {
-	if(error || HasError() || m_hive->HasStopped())
+	if(error != boost::system::errc::success || m_hive->HasStopped())
 		StartError( error );
 	else
 	{
@@ -333,7 +333,7 @@ void Connection::HandleRecv(const boost::system::error_code &error, int32_t actu
 // Connection::HandleTimer definition
 void Connection::HandleTimer(const boost::system::error_code &error)
 {
-	if(error || HasError() || m_hive->HasStopped())
+	if(error != boost::system::errc::success || m_hive->HasStopped())
 		StartError( error );
 	else
 	{

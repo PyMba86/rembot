@@ -1,7 +1,8 @@
 #pragma once
 
 #include <memory>
-
+#include <condition_variable>
+#include <mutex>
 
 namespace rb {
 
@@ -25,7 +26,9 @@ namespace rb {
         void setStateInput(std::weak_ptr<StateInput> stateInput);
 
         enum Event {
+            Close,
             Init,
+            Disconnect,
             DataOn,
             DataOff
         };

@@ -17,7 +17,9 @@ int main() {
     editor.setStateData(core->getStateData());
     core->setStateInput(editor.getStateInput());
 
+    editor.setEventCallback(rb::Editor::WINDOW_CLOSE, [core]() { core->notifyEvent(rb::Core::Close); });
     editor.setEventCallback(rb::Editor::BUTTON_INIT, [core]() { core->notifyEvent(rb::Core::Init); });
+    editor.setEventCallback(rb::Editor::BUTTON_CLOSE, [core]() { core->notifyEvent(rb::Core::Disconnect); });
     editor.setEventCallback(rb::Editor::BUTTON_DATA_ON, [core]() { core->notifyEvent(rb::Core::DataOn); });
     editor.setEventCallback(rb::Editor::BUTTON_DATA_OFF, [core]() { core->notifyEvent(rb::Core::DataOff); });
 
