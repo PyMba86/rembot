@@ -31,16 +31,18 @@ namespace rb {
 
         // Connection
         char macAddress[18] = "00:16:53:18:8E:08";
-        int chanel = 0;
+        int chanel = 1;
 
         // Map
-        StatusControl statusControl = StatusControl::Stop;
         std::vector<Position> positions;
     };
 
     struct StateData {
         StatusConnection statusConnection = StatusConnection::Closed;
+
         int positionActive = 0;
+
+        StatusControl statusControl = StatusControl::Stop;
 
         std::string message = "";
     };

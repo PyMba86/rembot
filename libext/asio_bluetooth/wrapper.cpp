@@ -46,7 +46,7 @@ void Hive::Stop()
 	if(boost::interprocess::ipcdetail::atomic_cas32(&m_shutdown, 1, 0) == 0)
 	{
 		m_work_ptr.reset();
-		m_io_service.run();
+		//m_io_service.run();
 		m_io_service.stop();
 	}
 }

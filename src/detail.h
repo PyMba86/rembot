@@ -28,7 +28,7 @@ namespace rb {
         };
 
         enum class WindowTypes {
-            None, TilesetWindow, NewMapWindow, ConfigWindow, MapSelectWindow, AboutWindow, LightEditorWindow,
+            None, TilesetWindow, NewMapWindow, ControlPlayWindow, ConfigWindow, MapSelectWindow, AboutWindow, LightEditorWindow,
             NewAnimatedSpriteWindow, NewAnimationWindow, RemoveAnimationWindow, EntityListWindow, EntityPropertiesWindow, ShapeColorWindow,
             ConfigureMapWindow, ConfigureBackgroundColorWindow, ConsoleWindow, BackgroundWindow, TileTypeWindow,
             TileTypeColorSelectionWindow

@@ -35,7 +35,7 @@ namespace rb {
             _showEntityList(false),
             _currentDrawShape(detail::DrawShapes::None),
             _currentWindowType(detail::WindowTypes::NewMapWindow),
-            _currentMapEditorMode(detail::MapEditorMode::Object),
+            _currentMapEditorMode(detail::MapEditorMode::None),
             _data(new Data) {
 
         ImGui::SFML::Init(*window);
@@ -307,7 +307,8 @@ namespace rb {
         // UI
 
         static bool newMapBoxVisible = false;
-        static bool configureBoxVisible = false;
+        static bool configureBoxVisible = true;
+        static bool playBoxVisible = false;
         static bool cbShowEntityList = false;
         static bool cbHideShapes = false;
         static bool cbAttachShapes = false;
@@ -389,6 +390,14 @@ namespace rb {
 
         }
 
+        //Clear all of the selected entity objects
+        static auto clearSelectedEntityObjects = [&]() {
+            selectedEntityPoint = nullptr;
+            originalSelectedEntityPoint = nullptr;
+            selectedEntityLine = nullptr;
+            originalSelectedEntityLine = nullptr;
+        };
+
         //New map box
         if (newMapBoxVisible) {
             this->_currentWindowType = detail::WindowTypes::NewMapWindow;
@@ -424,11 +433,13 @@ namespace rb {
                 } else if (mapSizeX >= 255 || mapSizeY >= 255) {
                     newMapErrorText = "Maximum map size exceeded (255 sm)!";
                 } else {
+                    clearSelectedEntityObjects();
                     this->_level.createMap(sf::Vector2i(mapSizeX, mapSizeY),
                                            sf::Vector2i(mapTileSize, mapTileSize));
                     createGridLines();
                     newMapErrorText = "";
                     this->_currentWindowType = detail::WindowTypes::None;
+                    this->_currentMapEditorMode = detail::MapEditorMode::Object;
                     newMapBoxVisible = false;
                 }
             }
@@ -437,6 +448,70 @@ namespace rb {
                 newMapErrorText = "";
                 this->_currentWindowType = detail::WindowTypes::None;
                 newMapBoxVisible = false;
+            }
+            ImGui::Text("%s", newMapErrorText.c_str());
+            ImGui::End();
+        }
+
+
+        if (playBoxVisible) {
+            this->_currentWindowType = detail::WindowTypes::ControlPlayWindow;
+            ImGui::SetNextWindowPosCenter();
+            ImGui::SetNextWindowSize(ImVec2(280, 100));
+            static std::string newMapErrorText;
+            ImGui::Begin("Control properties", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+
+
+            auto fillLineSection = [&]() -> void {
+                int c = 0;
+                for (std::shared_ptr<detail::Shape> shape : this->_level.getShapeList()) {
+                    ++c;
+                    //Line check
+                    auto l = std::dynamic_pointer_cast<detail::Line>(shape);
+                    if (l != nullptr) {
+                        std::string strId = "Line" + std::to_string(c);
+                        ImGui::PushID(strId.c_str());
+                        bool isSelected = (selectedEntityLine == l);
+                        shape->unselect();
+                        if (ImGui::Selectable(l->getName().c_str(), isSelected)) {
+                            selectedEntityLine = l;
+                            shape->select();
+                            originalSelectedEntityLine = std::make_shared<detail::Line>(l->getName(), l->getColor(),
+                                                                                        l->getPoints());
+
+                        }
+
+                        if (isSelected)
+                            ImGui::SetItemDefaultFocus();
+                        ImGui::PopID();
+                        continue;
+                    }
+                }
+            };
+
+            if (ImGui::BeginCombo("Path",  selectedEntityLine ? selectedEntityLine->getName().c_str() : "Select path"))
+            {
+                fillLineSection();
+                ImGui::EndCombo();
+            }
+            ImGui::Separator();
+            ImGui::PushItemWidth(100);
+
+
+            if (ImGui::Button("Play")) {
+                if (selectedEntityLine == nullptr) {
+                    newMapErrorText = "Select path!";
+                } else {
+                    this->_currentWindowType = detail::WindowTypes::None;
+                    if (auto &c = _data->callbacks[BUTTON_PLAY]) c();
+                    playBoxVisible = false;
+                }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel")) {
+                newMapErrorText = "";
+                this->_currentWindowType = detail::WindowTypes::None;
+                playBoxVisible = false;
             }
             ImGui::Text("%s", newMapErrorText.c_str());
             ImGui::End();
@@ -595,6 +670,7 @@ namespace rb {
                 } else if (selectedEntityLine != nullptr) {
                     this->_level.removeShape(selectedEntityLine);
                 }
+                clearSelectedEntityObjects();
                 this->_currentWindowType = detail::WindowTypes::None;
                 showEntityProperties = false;
             }
@@ -603,23 +679,23 @@ namespace rb {
         }
 
         if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
+            if (ImGui::BeginMenu("Configure")) {
 
-                if (ImGui::MenuItem("Configure")) {
+                if (ImGui::MenuItem("Connect",  nullptr,false, data->statusConnection == StatusConnection::Closed)) {
                     configureBoxVisible = true;
                 }
-                if (ImGui::MenuItem("Exit")) {
-
+                if (ImGui::MenuItem("Disconnect", nullptr,false, data->statusConnection == StatusConnection::Connected)) {
+                    if (auto &c = _data->callbacks[BUTTON_DISCONNECT]) c();
                 }
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Control")) {
+            if (ImGui::BeginMenu("Control",  data->statusConnection == StatusConnection::Connected)) {
                 if (ImGui::MenuItem("Play")) {
-
+                    playBoxVisible = true;
                 }
                 if (ImGui::MenuItem("Stop")) {
-                    if (auto &c = _data->callbacks[BUTTON_CLOSE]) c();
+                    if (auto &c = _data->callbacks[BUTTON_STOP]) c();
                 }
                 ImGui::EndMenu();
             }

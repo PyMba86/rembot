@@ -272,11 +272,11 @@ namespace rb {
         void Point::select() {
             if (!this->_selected) {
                 this->_selected = true;
-                this->_dot.setOutlineThickness(this->_dot.getOutlineThickness() + 1);
-                this->_dot.setFillColor(sf::Color(static_cast<sf::Uint8>(std::min(255, this->_dot.getFillColor().r + 16)),
-                                                  static_cast<sf::Uint8>(std::min(255, this->_dot.getFillColor().g + 16)),
-                                                  static_cast<sf::Uint8>(std::min(255, this->_dot.getFillColor().b + 16)),
-                                                  static_cast<sf::Uint8>(std::min(255, this->_dot.getFillColor().a + 16))
+                this->_dot.setOutlineThickness(this->_dot.getOutlineThickness() + 3);
+                this->_dot.setFillColor(sf::Color(static_cast<sf::Uint8>(std::min(155, this->_dot.getFillColor().r + 16)),
+                                                  static_cast<sf::Uint8>(std::min(155, this->_dot.getFillColor().g + 16)),
+                                                  static_cast<sf::Uint8>(std::min(155, this->_dot.getFillColor().b + 16)),
+                                                  static_cast<sf::Uint8>(std::min(155, this->_dot.getFillColor().a + 16))
                 ));
             }
         }
@@ -284,7 +284,7 @@ namespace rb {
         void Point::unselect() {
             if (this->_selected) {
                 this->_selected = false;
-                this->_dot.setOutlineThickness(this->_dot.getOutlineThickness() - 1);
+                this->_dot.setOutlineThickness(this->_dot.getOutlineThickness() - 3);
                 this->_dot.setFillColor(sf::Color(static_cast<sf::Uint8>(std::max(0, this->_dot.getFillColor().r - 16)),
                                                   static_cast<sf::Uint8>(std::max(0, this->_dot.getFillColor().g - 16)),
                                                   static_cast<sf::Uint8>(std::max(0, this->_dot.getFillColor().b - 16)),

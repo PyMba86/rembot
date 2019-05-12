@@ -28,9 +28,9 @@ namespace rb {
         enum Event {
             WINDOW_CLOSE,
             BUTTON_CONNECT,
-            BUTTON_CLOSE,
-            BUTTON_DATA_ON,
-            BUTTON_DATA_OFF
+            BUTTON_DISCONNECT,
+            BUTTON_PLAY,
+            BUTTON_STOP
         };
 
         void setEventCallback(Event e, std::function<void()> && callback);

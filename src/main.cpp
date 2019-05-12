@@ -19,7 +19,9 @@ int main() {
 
     editor.setEventCallback(rb::Editor::WINDOW_CLOSE, [core]() { core->notifyEvent(rb::Core::Close); });
     editor.setEventCallback(rb::Editor::BUTTON_CONNECT, [core]() { core->notifyEvent(rb::Core::Connect); });
-    editor.setEventCallback(rb::Editor::BUTTON_CLOSE, [core]() { core->notifyEvent(rb::Core::Disconnect); });
+    editor.setEventCallback(rb::Editor::BUTTON_DISCONNECT, [core]() { core->notifyEvent(rb::Core::Disconnect); });
+    editor.setEventCallback(rb::Editor::BUTTON_PLAY, [core]() { core->notifyEvent(rb::Core::Play); });
+    editor.setEventCallback(rb::Editor::BUTTON_STOP, [core]() { core->notifyEvent(rb::Core::Stop); });
 
     core->init();
 

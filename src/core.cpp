@@ -140,7 +140,6 @@ namespace rb {
             }
                 break;
             case Core::Event::Connect: {
-                std::cout << "Connect" << std::endl;
 
                 auto macAddress = inp->macAddress;
                 auto chanel = inp->chanel;
@@ -181,19 +180,31 @@ namespace rb {
                 break;
             case Core::Event::Play: {
                 // Отправляем первую команду роботу из списка
+                _data->inputQueue.push([this]() {
+                    _data->needRecache = true;
+                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Play;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Play";
+                });
             }
                 break;
             case Core::Event::Stop: {
+                // Останавливаем робота и зануляем значения
                 _data->inputQueue.push([this]() {
-                    // Останавливаем робота и зануляем значения
                     _data->needRecache = true;
                     _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
-                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Stop control";
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Stop";
                 });
             }
                 break;
             case Core::Event::Next: {
                 // Отправляем следующую команду и отрисовываем
+                _data->inputQueue.push([this]() {
+                    _data->needRecache = true;
+                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Point 4";
+                });
             }
                 break;
             default:
@@ -208,8 +219,6 @@ namespace rb {
             auto inp = _data->stateInput.lock();
 
             if (inp == nullptr) return;
-
-
         }
 
         while (_data->inputQueue.size() > 0) {
