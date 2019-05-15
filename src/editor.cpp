@@ -502,6 +502,59 @@ namespace rb {
                 if (selectedEntityLine == nullptr) {
                     newMapErrorText = "Select path!";
                 } else {
+                    inp->commands.clear();
+                    const auto &points = selectedEntityLine->getPoints();
+                    for (unsigned int i = 0; i < points.size() - 1; ++i) {
+
+                        sf::Vector2f point1 = sf::Vector2f(
+                                points[i]->getCircle().getPosition().x + points[i]->getCircle().getRadius(),
+                                points[i]->getCircle().getPosition().y + points[i]->getCircle().getRadius());
+                        sf::Vector2f point2 = sf::Vector2f(
+                                points[i + 1]->getCircle().getPosition().x + points[i + 1]->getCircle().getRadius(),
+                                points[i + 1]->getCircle().getPosition().y + points[i + 1]->getCircle().getRadius());
+
+                        sf::Vector2f direction = point2 - point1;
+
+                        sf::Vector2f unitDirection =
+                                direction / std::sqrt(direction.x * direction.x + direction.y * direction.y);
+
+                        sf::Vector2f unitPerpendicular(unitDirection.x, -unitDirection.y);
+
+                        Command  command{};
+                        command.size = this->_level.getTileSize().x;
+
+                        if (unitPerpendicular.y > 0) {
+                            // вверх
+                            command.direction = Direction::Up;
+                            command.length = static_cast<int>(std::abs(direction.y)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+                        } else if (unitPerpendicular.y < 0) {
+                            // вниз
+                            command.direction = Direction::Down;
+                            command.length = static_cast<int>(std::abs(direction.y)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+                        } else if (unitDirection.x  > 0) {
+                            // влево
+                            command.direction = Direction::Right;
+                            command.length = static_cast<int>(std::abs(direction.x)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+                        } else if (unitDirection.x < 0) {
+                            // вправо
+                            command.direction = Direction::Left;
+                            command.length = static_cast<int>(std::abs(direction.x)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+                        } else {
+                            // нет направления
+                            continue;
+                        }
+
+                        inp->commands.emplace_back(command);
+                    }
+
                     this->_currentWindowType = detail::WindowTypes::None;
                     if (auto &c = _data->callbacks[BUTTON_PLAY]) c();
                     playBoxVisible = false;
@@ -646,10 +699,12 @@ namespace rb {
             if (ImGui::Button("Update")) {
                 if (selectedEntityPoint != nullptr) {
                     selectedEntityPoint->setName(name);
+                    selectedEntityPoint->unselect();
                     this->_level.updateShape(originalSelectedEntityPoint, selectedEntityPoint);
                     startStatusTimer("Point saved successfully!", 200);
                 } else if (selectedEntityLine != nullptr) {
                     selectedEntityLine->setName(name);
+                    selectedEntityLine->unselect();
                     this->_level.updateShape(originalSelectedEntityLine, selectedEntityLine);
                     startStatusTimer("Line saved successfully!", 200);
                 }
@@ -658,6 +713,11 @@ namespace rb {
             }
             ImGui::SameLine();
             if (ImGui::Button("Close")) {
+                if (selectedEntityPoint != nullptr) {
+                    selectedEntityPoint->unselect();
+                } else if (selectedEntityLine != nullptr) {
+                    selectedEntityLine->unselect();
+                }
                 this->_currentWindowType = detail::WindowTypes::None;
                 showEntityProperties = false;
             }
@@ -690,7 +750,7 @@ namespace rb {
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Control",  data->statusConnection == StatusConnection::Connected)) {
+            if (ImGui::BeginMenu("Control"/*,  data->statusConnection == StatusConnection::Connected*/)) {
                 if (ImGui::MenuItem("Play")) {
                     playBoxVisible = true;
                 }

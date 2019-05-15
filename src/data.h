@@ -4,9 +4,17 @@
 
 namespace rb {
 
-    struct Position {
-        int x;
-        int y;
+    enum Direction: int {
+        Up,
+        Down,
+        Left,
+        Right
+    };
+
+    struct Command {
+        int size;
+        int length;
+        Direction direction;
     };
 
     enum StatusControl : int {
@@ -34,7 +42,7 @@ namespace rb {
         int chanel = 1;
 
         // Map
-        std::vector<Position> positions;
+        std::vector<Command> commands;
     };
 
     struct StateData {
