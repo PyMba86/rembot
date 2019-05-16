@@ -5,10 +5,10 @@
 namespace rb {
 
     enum Direction: int {
-        Up,
-        Down,
-        Left,
-        Right
+        Up = 1,
+        Down = 2,
+        Left = 3,
+        Right = 4
     };
 
     struct Command {
@@ -18,8 +18,8 @@ namespace rb {
     };
 
     enum StatusControl : int {
-        Play,
-        Stop
+        Play = 11,
+        Stop = 12
     };
 
     enum StatusConnection : int {

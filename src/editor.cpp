@@ -764,7 +764,7 @@ namespace rb {
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Control"/*,  data->statusConnection == StatusConnection::Connected*/)) {
+            if (ImGui::BeginMenu("Control",  data->statusConnection == StatusConnection::Connected)) {
                 if (ImGui::MenuItem("Play")) {
                     playBoxVisible = true;
                 }

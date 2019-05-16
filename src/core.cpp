@@ -166,6 +166,7 @@ namespace rb {
                 _data->inputQueue.push([this]() {
                     _data->needRecache = true;
                     _data->stateData[Data::BUFFER_ACTIVE]->statusConnection = StatusConnection::Closed;
+                    _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
                     _data->stateData[Data::BUFFER_ACTIVE]->message = "Disconnected";
                 });
             }
@@ -181,11 +182,15 @@ namespace rb {
                 break;
             case Core::Event::Play: {
                 // Отправляем первую команду роботу из списка
-                _data->inputQueue.push([this]() {
+                auto command = inp->commands.at(0);
+
+                _data->inputQueue.push([this, command]() {
                     _data->needRecache = true;
-                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0 ;
+                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
                     _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Play;
                     _data->stateData[Data::BUFFER_ACTIVE]->message = "Play";
+                    _data->connection->Send(
+                            {(uint8_t) command.direction, (uint8_t) command.length, (uint8_t) command.size});
                 });
             }
                 break;
@@ -196,15 +201,30 @@ namespace rb {
                     _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
                     _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
                     _data->stateData[Data::BUFFER_ACTIVE]->message = "Stop";
+                    _data->connection->Send({(uint8_t) StatusControl::Stop});
                 });
             }
                 break;
             case Core::Event::Next: {
                 // Отправляем следующую команду и отрисовываем
-                _data->inputQueue.push([this]() {
+                auto commands = inp->commands;
+                _data->inputQueue.push([this, commands]() {
                     _data->needRecache = true;
-                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
-                    _data->stateData[Data::BUFFER_ACTIVE]->message = "Point 4";
+                    auto newPositionActive = _data->stateData[Data::BUFFER_ACTIVE]->positionActive + 1;
+
+                    if (newPositionActive < commands.size()) {
+                        auto command = commands.at(newPositionActive);
+
+                        _data->needRecache = true;
+                        _data->stateData[Data::BUFFER_ACTIVE]->positionActive = newPositionActive;
+                        _data->stateData[Data::BUFFER_ACTIVE]->message = ("Point " + std::to_string(newPositionActive));
+                        _data->connection->Send(
+                                {(uint8_t) command.direction, (uint8_t) command.length, (uint8_t) command.size});
+                    } else {
+                        _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                        _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
+                        _data->stateData[Data::BUFFER_ACTIVE]->message = "Finish";
+                    }
                 });
             }
                 break;
@@ -275,7 +295,24 @@ namespace rb {
                 break;
             case StatusConnection::Recived: {
                 // Проверяем ответ и отправляем команду
-                this->notifyEvent(Core::Event::Next);
+
+                if (buffer.empty()) {
+                    this->notifyEvent(Core::Event::Stop);
+                    break;
+                }
+
+                switch (static_cast<StatusPosition>(buffer[0])) {
+                    case StatusPosition::Ok :
+                        this->notifyEvent(Core::Event::Next);
+                        break;
+                    case StatusPosition::No :
+                        this->notifyEvent(Core::Event::Stop);
+                        break;
+                    default:
+                        this->notifyEvent(Core::Event::Stop);
+                        break;
+                }
+
             }
                 break;
         }

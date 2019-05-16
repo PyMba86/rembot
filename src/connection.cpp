@@ -1,5 +1,7 @@
 #include <utility>
 
+#include <utility>
+
 #include "connection.h"
 
 namespace rb {
@@ -54,12 +56,6 @@ namespace rb {
 
         runCbEvent(StatusConnection::Recived, buffer);
 
-        std::string str = "S";
-
-        std::vector<uint8_t> request;
-        std::copy(str.begin(), str.end(), std::back_inserter(request));
-        Send(request);
-
         // Start the next receive
         Recv();
     }
@@ -78,7 +74,7 @@ namespace rb {
     }
 
     void BtConnection::onEvent(BtConnectionEvent cbEvent) {
-        this->_cbEvent = cbEvent;
+        this->_cbEvent = std::move(cbEvent);
     }
 
     void BtConnection::runCbEvent(StatusConnection status, const std::vector<uint8_t> buffer) {
