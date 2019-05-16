@@ -46,11 +46,11 @@ namespace rb {
     };
 
     struct StateData {
+        StatusControl statusControl = StatusControl::Stop;
+
         StatusConnection statusConnection = StatusConnection::Closed;
 
         int positionActive = 0;
-
-        StatusControl statusControl = StatusControl::Stop;
 
         std::string message = "";
     };

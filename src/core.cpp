@@ -19,6 +19,7 @@ namespace rb {
 
     inline void updateStateData(const StateData *bsrc, StateData *bdst) {
         bdst->statusConnection = bsrc->statusConnection;
+        bdst->statusControl = bsrc->statusControl;
         bdst->positionActive = bsrc->positionActive;
         bdst->message = bsrc->message;
     }
@@ -182,7 +183,7 @@ namespace rb {
                 // Отправляем первую команду роботу из списка
                 _data->inputQueue.push([this]() {
                     _data->needRecache = true;
-                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0 ;
                     _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Play;
                     _data->stateData[Data::BUFFER_ACTIVE]->message = "Play";
                 });

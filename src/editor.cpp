@@ -340,6 +340,20 @@ namespace rb {
 
         static std::regex macRegex("^[a-fA-F0-9:]{17}|[a-fA-F0-9]{12}$");
 
+
+        //Draw active point color custom
+        if (selectedEntityLine) {
+            auto points = selectedEntityLine->getPoints();
+            if (data->statusControl == StatusControl::Play) {
+                points.at(data->positionActive)->setColor(sf::Color::Red);
+                if (data->positionActive > 0) {
+                    points.at(data->positionActive-1)->setColor(sf::Color(0, 255, 0));
+                }
+            } else if (data->statusControl == StatusControl::Stop) {
+                points.at(data->positionActive)->setColor(sf::Color(0, 255, 0));
+            }
+        }
+
         // Show messages core
         if (!data->message.empty()) {
             startStatusTimer(data->message, 200);
@@ -759,7 +773,9 @@ namespace rb {
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Map")) {
+
+
+            if (ImGui::BeginMenu("Map", data->statusControl == StatusControl::Stop)) {
                 if (ImGui::MenuItem("New map")) {
                     newMapBoxVisible = true;
                 }
@@ -780,7 +796,7 @@ namespace rb {
 
                 ImGui::Separator();
                 if (ImGui::Checkbox("Show entity list   E", &cbShowEntityList) &&
-                    this->_currentMapEditorMode == detail::MapEditorMode::Object) {
+                    this->_currentMapEditorMode == detail::MapEditorMode::Object && data->statusControl == StatusControl::Stop) {
                     this->_showEntityList = cbShowEntityList;
                 }
                 if (ImGui::Checkbox("Hide shapes", &cbHideShapes)) {
