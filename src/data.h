@@ -30,9 +30,9 @@ namespace rb {
         Recived
     };
 
-    enum StatusPosition : int {
-        No,
-        Ok
+    enum StatusCommand : int {
+        No = 0,
+        Ok = 1
     };
 
     struct StateInput {

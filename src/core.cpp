@@ -198,7 +198,7 @@ namespace rb {
                 // Останавливаем робота и зануляем значения
                 _data->inputQueue.push([this]() {
                     _data->needRecache = true;
-                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                  //  _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
                     _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
                     _data->stateData[Data::BUFFER_ACTIVE]->message = "Stop";
                     _data->connection->Send({(uint8_t) StatusControl::Stop});
@@ -221,7 +221,7 @@ namespace rb {
                         _data->connection->Send(
                                 {(uint8_t) command.direction, (uint8_t) command.length, (uint8_t) command.size});
                     } else {
-                        _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                       // _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
                         _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
                         _data->stateData[Data::BUFFER_ACTIVE]->message = "Finish";
                     }
@@ -301,11 +301,11 @@ namespace rb {
                     break;
                 }
 
-                switch (static_cast<StatusPosition>(buffer[0])) {
-                    case StatusPosition::Ok :
+                switch (static_cast<StatusCommand>(buffer[0])) {
+                    case StatusCommand::Ok :
                         this->notifyEvent(Core::Event::Next);
                         break;
-                    case StatusPosition::No :
+                    case StatusCommand::No :
                         this->notifyEvent(Core::Event::Stop);
                         break;
                     default:

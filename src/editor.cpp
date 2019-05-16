@@ -775,7 +775,7 @@ namespace rb {
             }
 
 
-            if (ImGui::BeginMenu("Map", data->statusControl == StatusControl::Stop)) {
+            if (ImGui::BeginMenu("Map", data->statusControl == StatusControl::Stop && this->_menuClicks <= 1)) {
                 if (ImGui::MenuItem("New map")) {
                     newMapBoxVisible = true;
                 }
