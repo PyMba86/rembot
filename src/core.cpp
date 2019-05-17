@@ -198,7 +198,7 @@ namespace rb {
                 // Останавливаем робота и зануляем значения
                 _data->inputQueue.push([this]() {
                     _data->needRecache = true;
-                  //  _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                    _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
                     _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
                     _data->stateData[Data::BUFFER_ACTIVE]->message = "Stop";
                     _data->connection->Send({(uint8_t) StatusControl::Stop});
@@ -221,7 +221,7 @@ namespace rb {
                         _data->connection->Send(
                                 {(uint8_t) command.direction, (uint8_t) command.length, (uint8_t) command.size});
                     } else {
-                       // _data->stateData[Data::BUFFER_ACTIVE]->positionActive = 0;
+                        _data->stateData[Data::BUFFER_ACTIVE]->positionActive = newPositionActive-1;
                         _data->stateData[Data::BUFFER_ACTIVE]->statusControl = StatusControl::Stop;
                         _data->stateData[Data::BUFFER_ACTIVE]->message = "Finish";
                     }

@@ -15,6 +15,7 @@ namespace rb {
         int size;
         int length;
         Direction direction;
+        Direction view;
     };
 
     enum StatusControl : int {

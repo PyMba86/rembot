@@ -47,7 +47,7 @@ namespace rb {
 
         _data->stateDataLocked = _data->stateData.lock();
 
-        const auto & inp = _data->stateInput;
+        const auto &inp = _data->stateInput;
         const auto &data = _data->stateDataLocked;
 
         //Return the current mouse position
@@ -342,17 +342,19 @@ namespace rb {
 
 
         //Draw active point color custom
-        if (selectedEntityLine) {
+        /* if (selectedEntityLine) {
             auto points = selectedEntityLine->getPoints();
             if (data->statusControl == StatusControl::Play) {
                 points.at(data->positionActive)->setColor(sf::Color::Red);
                 if (data->positionActive > 0) {
-                    points.at(data->positionActive-1)->setColor(sf::Color(0, 255, 0));
+                    points.at(data->positionActive - 1)->setColor(sf::Color(0, 255, 0));
                 }
             } else if (data->statusControl == StatusControl::Stop) {
-                points.at(data->positionActive)->setColor(sf::Color(0, 255, 0));
+                if (points.size() >= data->positionActive+1) {
+                    points.at(data->positionActive)->setColor(sf::Color(0, 255, 0));
+                }
             }
-        }
+        } */
 
         // Show messages core
         if (!data->message.empty()) {
@@ -503,8 +505,7 @@ namespace rb {
                 }
             };
 
-            if (ImGui::BeginCombo("Path",  selectedEntityLine ? selectedEntityLine->getName().c_str() : "Select path"))
-            {
+            if (ImGui::BeginCombo("Path", selectedEntityLine ? selectedEntityLine->getName().c_str() : "Select path")) {
                 fillLineSection();
                 ImGui::EndCombo();
             }
@@ -534,39 +535,117 @@ namespace rb {
 
                         sf::Vector2f unitPerpendicular(unitDirection.x, -unitDirection.y);
 
-                        Command  command{};
-                        command.size = this->_level.getTileSize().x;
+                        // движение
+                        Command upCommand{};
+                        upCommand.size = this->_level.getTileSize().x;
+                        upCommand.direction = Direction::Up;
+                        upCommand.view = Direction::Up;
+
+
+                        // поворот робота
+                        Command directCommand{};
+                        directCommand.size = this->_level.getTileSize().x;
+                        directCommand.length = static_cast<int>(std::abs(direction.y)) / std::stof(
+                                detail::utils::getConfigValue(
+                                        "tile_scale_x")) / this->_level.getTileSize().x;
 
                         if (unitPerpendicular.y > 0) {
-                            // вверх
-                            command.direction = Direction::Up;
-                            command.length = static_cast<int>(std::abs(direction.y)) / std::stof(
-                                    detail::utils::getConfigValue(
-                                            "tile_scale_x")) / this->_level.getTileSize().x;
-                        } else if (unitPerpendicular.y < 0) {
-                            // вниз
-                            command.direction = Direction::Down;
-                            command.length = static_cast<int>(std::abs(direction.y)) / std::stof(
-                                    detail::utils::getConfigValue(
-                                            "tile_scale_x")) / this->_level.getTileSize().x;
-                        } else if (unitDirection.x  > 0) {
-                            // влево
-                            command.direction = Direction::Right;
-                            command.length = static_cast<int>(std::abs(direction.x)) / std::stof(
-                                    detail::utils::getConfigValue(
-                                            "tile_scale_x")) / this->_level.getTileSize().x;
-                        } else if (unitDirection.x < 0) {
-                            // вправо
-                            command.direction = Direction::Left;
-                            command.length = static_cast<int>(std::abs(direction.x)) / std::stof(
-                                    detail::utils::getConfigValue(
-                                            "tile_scale_x")) / this->_level.getTileSize().x;
-                        } else {
-                            // нет направления
-                            continue;
-                        }
+                            // поворот на верх
+                            directCommand.view = Direction::Up;
+                            upCommand.view = Direction::Up;
 
-                        inp->commands.emplace_back(command);
+                            upCommand.length = static_cast<int>(std::abs(direction.y)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+
+                            if (!inp->commands.empty()) {
+                                const auto &lastDirectCommand = inp->commands.back();
+
+                                if ((lastDirectCommand.view == Direction::Right)) {
+                                    // Поворот налево, в случае если смотрит на право
+                                    directCommand.direction = Direction::Left;
+                                    inp->commands.emplace_back(directCommand);
+                                } else if ((lastDirectCommand.view == Direction::Left)) {
+                                    // Поворот направо, в случае если смотрит на лево
+                                    directCommand.direction = Direction::Right;
+                                    inp->commands.emplace_back(directCommand);
+                                }
+                            }
+
+                        } else if (unitPerpendicular.y < 0) {
+                            // поворот на вниз
+                            directCommand.view = Direction::Down;
+                            upCommand.view = Direction::Down;
+
+                            upCommand.length = static_cast<int>(std::abs(direction.y)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+
+
+                            if (!inp->commands.empty()) {
+                                const auto &lastDirectCommand = inp->commands.back();
+
+                                if ((lastDirectCommand.view == Direction::Right)) {
+                                    // Поворот направо, в случае если смотрит на право
+                                    directCommand.direction = Direction::Right;
+                                    inp->commands.emplace_back(directCommand);
+                                } else if ((lastDirectCommand.view == Direction::Left)) {
+                                    // Поворот налево, в случае если смотрит на лево
+                                    directCommand.direction = Direction::Left;
+                                    inp->commands.emplace_back(directCommand);
+                                }
+                            }
+
+                        } else if (unitDirection.x > 0) {
+
+                            // поворот на право
+                            directCommand.view = Direction::Right;
+                            upCommand.view = Direction::Right;
+
+                            upCommand.length = static_cast<int>(std::abs(direction.x)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+
+
+                            if (!inp->commands.empty()) {
+                                const auto &lastDirectCommand = inp->commands.back();
+
+                                if ((lastDirectCommand.view == Direction::Up)) {
+                                    // Поворот направо, в случае если смотрит на верх
+                                    directCommand.direction = Direction::Right;
+                                    inp->commands.emplace_back(directCommand);
+                                } else if ((lastDirectCommand.view == Direction::Down)) {
+                                    // Поворот налево, в случае если смотрит вниз
+                                    directCommand.direction = Direction::Left;
+                                    inp->commands.emplace_back(directCommand);
+                                }
+                            }
+                        } else if (unitDirection.x < 0) {
+
+                            // поворот на право
+                            directCommand.view = Direction::Left;
+                            upCommand.view = Direction::Left;
+
+                            upCommand.length = static_cast<int>(std::abs(direction.x)) / std::stof(
+                                    detail::utils::getConfigValue(
+                                            "tile_scale_x")) / this->_level.getTileSize().x;
+
+
+                            if (!inp->commands.empty()) {
+                                const auto &lastDirectCommand = inp->commands.back();
+
+                                if ((lastDirectCommand.view == Direction::Up)) {
+                                    // Поворот налево, в случае если смотрит на верх
+                                    directCommand.direction = Direction::Left;
+                                    inp->commands.emplace_back(directCommand);
+                                } else if ((lastDirectCommand.view == Direction::Down)) {
+                                    // Поворот направо, в случае если смотрит вниз
+                                    directCommand.direction = Direction::Right;
+                                    inp->commands.emplace_back(directCommand);
+                                }
+                            }
+                        }
+                        inp->commands.emplace_back(upCommand);
                     }
 
                     this->_currentWindowType = detail::WindowTypes::None;
@@ -755,16 +834,17 @@ namespace rb {
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("Configure")) {
 
-                if (ImGui::MenuItem("Connect",  nullptr,false, data->statusConnection == StatusConnection::Closed)) {
+                if (ImGui::MenuItem("Connect", nullptr, false, data->statusConnection == StatusConnection::Closed)) {
                     configureBoxVisible = true;
                 }
-                if (ImGui::MenuItem("Disconnect", nullptr,false, data->statusConnection == StatusConnection::Connected)) {
+                if (ImGui::MenuItem("Disconnect", nullptr, false,
+                                    data->statusConnection == StatusConnection::Connected)) {
                     if (auto &c = _data->callbacks[BUTTON_DISCONNECT]) c();
                 }
                 ImGui::EndMenu();
             }
 
-            if (ImGui::BeginMenu("Control",  data->statusConnection == StatusConnection::Connected)) {
+            if (ImGui::BeginMenu("Control", data->statusConnection == StatusConnection::Connected)) {
                 if (ImGui::MenuItem("Play")) {
                     playBoxVisible = true;
                 }
@@ -796,7 +876,8 @@ namespace rb {
 
                 ImGui::Separator();
                 if (ImGui::Checkbox("Show entity list   E", &cbShowEntityList) &&
-                    this->_currentMapEditorMode == detail::MapEditorMode::Object && data->statusControl == StatusControl::Stop) {
+                    this->_currentMapEditorMode == detail::MapEditorMode::Object &&
+                    data->statusControl == StatusControl::Stop) {
                     this->_showEntityList = cbShowEntityList;
                 }
                 if (ImGui::Checkbox("Hide shapes", &cbHideShapes)) {
