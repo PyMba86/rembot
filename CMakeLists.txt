@@ -1,41 +1,56 @@
-cmake_minimum_required (VERSION 3.11)
-project (rembot)
+cmake_minimum_required(VERSION 3.11)
+project(rembot)
+
+set(BOOST_ROOT "/opt/boost")
+
+set(CPP_VERSION -std=c++14)
+
+set(SFML_STATIC_LIBRARIES TRUE)
+
+set(Boost_USE_STATIC_LIBS ON)
+
+list(APPEND BOOST_COMPONENTS
+        thread
+        system)
+
+include(FindPkgConfig)
+find_package(SFML COMPONENTS system window graphics network audio REQUIRED)
+find_package(OpenGL REQUIRED)
+
+find_package(Boost 1.68 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+include_directories(${Boost_INCLUDE_DIR})
 
 
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE RELEASE)
-endif()
+include_directories(libext/asio_bluetooth/asio_bluetooth)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -W -Wall -Wno-long-long -pedantic")
+set(LIB_FILES
+        libext/imgui.cpp libext/imgui_demo.cpp libext/imgui_draw.cpp libext/imgui-SFML.cpp libext/asio_bluetooth/wrapper.cpp
+        src/detail.cpp
+        src/queue.h
+        src/data.cpp
+        src/editor.cpp
+        src/main.cpp
+        src/connection.cpp
+        src/core.cpp
+        )
 
-## Dependencies
-find_package(Threads REQUIRED)
-find_package(PkgConfig REQUIRED)
-pkg_search_module(GLFW REQUIRED glfw3)
-include_directories(SYSTEM ${GLFW_INCLUDE_DIRS})
-
-## Logging parameters
-if (CG_LOGGING) # Verbosity
-    add_definitions(-DCG_LOGGING=${CG_LOGGING})
-else (CG_LOGGING)
-    add_definitions(-DCG_LOGGING=10)
-endif (CG_LOGGING)
-
-option(CG_OUTPUT "Use cg-output" ON)
-if (CG_OUTPUT)
-    add_definitions(-DCG_OUTPUT -DCOLOR_OUTPUT)
-endif()
-
-add_definitions(-DCG_COLOR_OUTPUT) # Colored log messages
+set(LIB_TEST_FILES
+        libext/asio_bluetooth/wrapper.cpp
+        test/main.cpp
+        )
 
 
-## Libs
-set(CG_CORE_LIB cg_core)
-set(CG_IMGUI_LIB ImGui)
 
-include_directories(src)
-include_directories(external)
+include_directories(${SFML_INCLUDE_DIR})
 
-add_subdirectory(src)
-add_subdirectory(external)
-add_subdirectory(main)
+link_libraries(stdc++fs)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fpermissive ")
+
+add_executable(rembot ${LIB_FILES})
+add_executable(rembot_control ${LIB_TEST_FILES})
+
+
+target_link_libraries(rembot ${SFML_LIBRARIES} ${OPENGL_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY}  -lbluetooth -lsfml-window -lsfml-graphics -lsfml-system)
+target_link_libraries(rembot_control ${Boost_SYSTEM_LIBRARY} ${Boost_THREAD_LIBRARY}  -lbluetooth)
+
